@@ -89,7 +89,7 @@ typedef struct
 
 ack_state_type ack_state;
 
-#define ACK_TIMEOUT   1000  // 250 ms for an ack to timeout before resending.
+#define ACK_TIMEOUT   1000  // in ms, for an ack to timeout before resending.
 
 #define ACK_CMD 'A'
 
@@ -180,7 +180,7 @@ void send_direction(dir_type dir)
 
 void check_for_resends( void )
 {
-  unsigned int current_time;
+  unsigned long int current_time;
 
   current_time = millis();
 
@@ -188,6 +188,7 @@ void check_for_resends( void )
   if (ack_state.last_dir_acked == FALSE)
   {
     // is it time to resend?
+    // NOTE:  probably want a time rollover check here!!!
     if (current_time > ack_state.last_sent_dir_time + ACK_TIMEOUT)
     {
       Serial.println("RESEND!");
@@ -236,16 +237,21 @@ void check_for_acks( void )
         {
           ack_state.last_dir_acked = TRUE;
           ack_state.parse_state = RX_IDLE;
+
+          Serial.println("Acked!");
         }
-        else if (rx_char == ack_state.last_sent_speed)
-        {
-          ack_state.last_speed_acked = TRUE;
-          ack_state.parse_state = RX_IDLE;
-        }
+
+        // really want to distinguish between wait for dir, wait for speed, or wait for both.
+        //else if (rx_char == ack_state.last_sent_speed)
+        //{
+        //  ack_state.last_speed_acked = TRUE;
+        //  ack_state.parse_state = RX_IDLE;
+        //}
         else
         {
            // this ack didn't match either our last sent speed or dir.
            // Flag the unexpected input...and that means we're waiting for a full cmd again.
+           // Note that resends will trigger here, since the command wasn't acked.
            Serial.print("Unexpeced ack from MEEP: ");
            Serial.println(rx_char);
            ack_state.parse_state = WAIT_FOR_CMD;
