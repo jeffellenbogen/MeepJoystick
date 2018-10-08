@@ -9,6 +9,11 @@ SoftwareSerial XBee(2, 3); // Arduino RX, TX (XBee Dout, Din)
 #define zippyy_switch_pin_4 9   //blue
 #define speedButton_pin 10
 
+#define JOYSTICK_UP_PIN       zippyy_switch_pin_4
+#define JOYSTICK_DOWN_PIN     zippyy_switch_pin_1
+#define JOYSTICK_LEFT_PIN     zippyy_switch_pin_3
+#define JOYSTICK_RIGHT_PIN    zippyy_switch_pin_2
+
 #define LED_pinR 11
 #define LED_pinG 12
 #define LED_pinB 13
@@ -17,7 +22,8 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
-void setup() {  
+void setup() 
+{  
   Serial.begin(9600); // Start serial communication
   XBee.begin(9600);  
   //with XBee at 9600 baud
@@ -35,10 +41,8 @@ void setup() {
   analogWrite(LED_pinB, 0);
 }
 
-void loop() {
-
-//Read ZIPPYY Joystick
-  
+void old_read_joystick_direction(void)
+{
       if ((digitalRead(zippyy_switch_pin_4) == 0) && 
       (digitalRead(zippyy_switch_pin_2) == 0))
         Direction = 3;
@@ -61,7 +65,46 @@ void loop() {
         Direction = 4;
       else
         Direction = 5;  
-       delay (100);
+}
+
+void read_joystick_direction(void)
+{
+  int up;
+  int down;
+  int left;
+  int right;
+
+  // read the joystick switches.  Note these are active low, so we're inverting.
+  up = !digitalRead(JOYSTICK_UP_PIN);
+  down = !digitalRead(JOYSTICK_DOWN_PIN);
+  left = !digitalRead(JOYSTICK_LEFT_PIN);
+  right = !digitalRead(JOYSTICK_RIGHT_PIN);
+
+  if (up)
+  {
+    if (left)       Direction = 1;
+    else if (right) Direction = 3;
+    else            Direction = 2;
+  }
+  else if (down)
+  {
+    if (left)       Direction = 7;
+    else if (right) Direction = 9;
+    else            Direction = 8;
+  }
+  else if (left)    Direction = 4;
+  else if (right)   Direction = 6;
+  else              Direction = 5;
+  
+}
+
+void loop() 
+{
+
+  //Read ZIPPYY Joystick
+  read_joystick_direction();
+       
+  delay (100);
        
 //Check to see if joystick direction has changed
 
