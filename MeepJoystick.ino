@@ -1,4 +1,6 @@
 // SoftwareSerial is used to communicate with the XBee
+// Adding LCD interface with Meep 4WD
+
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
 
@@ -70,7 +72,7 @@ void setup() {
 
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
-  lcd.print("M33p!");
+  lcd.print("Joystick On");
 }
 
 void loop() {
@@ -130,8 +132,8 @@ void loop() {
         speedToggle();
         delay(100);
       }
-         
-      
+      check_meep();   
+          
 }
 
 void stopDriving(){
@@ -186,10 +188,7 @@ void speedToggle(){
     Speed = 1;
 
   if (Speed == 1){
-    lcd.setCursor(0, 1);
-    lcd.print("SLOW MO ");
-    
-    Serial.println("Slow Mo Speed");
+    Serial.println("Slow Mo Speed");  // What the joystick is sending
     XBee.print('S');
     analogWrite(LED_pinR, 255);
     analogWrite(LED_pinG, 0);
@@ -199,8 +198,6 @@ void speedToggle(){
     }
 
   if (Speed == 2){
-    lcd.setCursor(0, 1);
-    lcd.print("REGULAR ");
     Serial.println("Regular Speed!");
     XBee.print('R');
     analogWrite(LED_pinR, 210);
@@ -212,8 +209,6 @@ void speedToggle(){
 
     
   if (Speed == 3){
-    lcd.setCursor(0, 1);
-    lcd.print("TURBO!!!");
     Serial.println("Turbo Speed!");
     XBee.print('T');
     analogWrite(LED_pinR, 0);
@@ -222,4 +217,31 @@ void speedToggle(){
     delay(50);
     XBee.print('T');
     }      
+} // of of Speed Toggle Function
+
+void check_meep()
+{
+    char c;
+    if (XBee.available())
+    {
+       c = XBee.read();
+       switch(c)
+       {
+         case 'R': 
+            lcd.setCursor(0, 1);
+            lcd.print("REGULAR ");
+         break;
+         case 'T': 
+            lcd.setCursor(0, 1);
+            lcd.print("TURBO!!! ");
+         break;
+         case 'S': 
+            lcd.setCursor(0, 1);
+            lcd.print("SLOW MO ");
+         break; 
+                 
+       } //end of switch on c
+    }  // end of if XBee.available
+    
 }
+
