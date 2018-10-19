@@ -1,11 +1,45 @@
 // SoftwareSerial is used to communicate with the XBee
 #include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+
+/*================
+ * LCD CONNECTIONS:  (note...we're using 4 bit mode here...)
+ *   1 to GND
+ *   2 to 5V
+ *   3 to the contrast control...I did a hardcoded voltage divider.
+ *   4 to Arduino digital pin LCD_REG_SEL
+ *   5 to GND
+ *   6 to Arduino digital pin LCD_ENABLE
+ *   7 (no connection)
+ *   8 (no connection)
+ *   9 (no connection)
+ *   10 (no connection)
+ *   11 to Arduino  digital pin LCD_D4
+ *   12 to Arduino  digital pin LCD_D5
+ *   13 to Arduino  digital pin LCD_D6
+ *   14 to Arduino  digital pin LCD_D7
+ *   15 to 5V
+ *   16 to GND
+ *====================*/
+ 
+#define LCD_D7         A0 
+#define LCD_D6         A1
+#define LCD_D5         A2
+#define LCD_D4         A3
+#define LCD_ENABLE     A4
+#define LCD_REG_SEL    A5
+
+// Our LCD has 2 rows of 16 characters.
+#define LCD_CHARS 16
+#define LCD_ROWS 2
+
+LiquidCrystal lcd(LCD_REG_SEL, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
 SoftwareSerial XBee(2, 3); // Arduino RX, TX (XBee Dout, Din)
 
 #define zippyy_switch_pin_1 6   //white     
-#define zippyy_switch_pin_2 7   //red     
-#define zippyy_switch_pin_3 8   //green     
+#define zippyy_switch_pin_2 7   //green     
+#define zippyy_switch_pin_3 8   //red     
 #define zippyy_switch_pin_4 9   //blue
 #define speedButton_pin 10
 
@@ -33,6 +67,10 @@ void setup() {
   analogWrite(LED_pinR, 210);
   analogWrite(LED_pinG, 150); 
   analogWrite(LED_pinB, 0);
+
+  lcd.begin(LCD_CHARS, LCD_ROWS);
+  lcd.clear();
+  lcd.print("M33p!");
 }
 
 void loop() {
@@ -148,6 +186,9 @@ void speedToggle(){
     Speed = 1;
 
   if (Speed == 1){
+    lcd.setCursor(0, 1);
+    lcd.print("SLOW MO ");
+    
     Serial.println("Slow Mo Speed");
     XBee.print('S');
     analogWrite(LED_pinR, 255);
@@ -158,6 +199,8 @@ void speedToggle(){
     }
 
   if (Speed == 2){
+    lcd.setCursor(0, 1);
+    lcd.print("REGULAR ");
     Serial.println("Regular Speed!");
     XBee.print('R');
     analogWrite(LED_pinR, 210);
@@ -169,6 +212,8 @@ void speedToggle(){
 
     
   if (Speed == 3){
+    lcd.setCursor(0, 1);
+    lcd.print("TURBO!!!");
     Serial.println("Turbo Speed!");
     XBee.print('T');
     analogWrite(LED_pinR, 0);
