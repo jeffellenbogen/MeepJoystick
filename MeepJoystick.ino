@@ -239,7 +239,42 @@ void check_meep()
             lcd.setCursor(0, 1);
             lcd.print("SLOW MO ");
          break; 
-                 
+         case '1': 
+            lcd.setCursor(0, 0);
+            lcd.print("Forw. Slgt. LEFT");
+         break;
+         case '2': 
+            lcd.setCursor(0, 0);
+            lcd.print("FORWARD         ");
+         break; 
+         case '3': 
+            lcd.setCursor(0, 0);
+            lcd.print("Forw. Slgt. RGHT");
+         break;  
+         case '4': 
+            lcd.setCursor(0, 0);
+            lcd.print("LEFT            ");
+         break;   
+         case '5': 
+            lcd.setCursor(0, 0);
+            lcd.print("STOP            ");
+         break;    
+         case '6': 
+            lcd.setCursor(0, 0);
+            lcd.print("RIGHT           ");
+         break;  
+         case '7': 
+            lcd.setCursor(0, 0);
+            lcd.print("Back  Slgt. LEFT");
+         break;
+         case '8': 
+            lcd.setCursor(0, 0);
+            lcd.print("BACKWARD        ");
+         break; 
+         case '9': 
+            lcd.setCursor(0, 0);
+            lcd.print("Back Slgt. RIGHT");
+         break;                                                                      
        } //end of switch on c
     }  // end of if XBee.available
     
