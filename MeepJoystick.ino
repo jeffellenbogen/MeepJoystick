@@ -83,28 +83,35 @@ void setup() {
  */
 void get_joystick_direction( void )
 {
-  if ((digitalRead(zippyy_switch_pin_4) == 0) && 
-      (digitalRead(zippyy_switch_pin_2) == 0))
-    Direction = 3;
-  else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-           (digitalRead(zippyy_switch_pin_2) == 0))
-    Direction = 9;
-  else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-           (digitalRead(zippyy_switch_pin_3) == 0))
-    Direction = 7;
-  else if ((digitalRead(zippyy_switch_pin_3) == 0) && 
-           (digitalRead(zippyy_switch_pin_4) == 0))
-    Direction = 1;    
-  else if(digitalRead(zippyy_switch_pin_1) == 0)
-    Direction = 8;
-  else if(digitalRead(zippyy_switch_pin_4) == 0)
-    Direction = 2;
-  else if(digitalRead(zippyy_switch_pin_2) == 0)
-    Direction = 6;
-  else if(digitalRead(zippyy_switch_pin_3) == 0)
-    Direction = 4;
-  else
-    Direction = 5;  
+  int up;
+  int down;
+  int left;
+  int right;
+
+  // the joystick pins are active low; therefore to 
+  // get the logical direction, we need to invert what
+  // we read.
+  up =    !digitalRead(zippyy_switch_pin_4);
+  down =  !digitalRead(zippyy_switch_pin_1);
+  left =  !digitalRead(zippyy_switch_pin_3);
+  right = !digitalRead(zippyy_switch_pin_2);
+
+  if (up)
+  {
+    if (left)       Direction = 1;
+    else if (right) Direction = 3;
+    else            Direction = 2;
+  }
+  else if (down)
+  {
+    if (left)       Direction = 7;
+    else if (right) Direction = 9;
+    else            Direction = 8;
+  }
+  else if (left)    Direction = 4;
+  else if (right)   Direction = 6;
+  else              Direction = 5;
+  
 } // end of get_joystick_direction
 
 /*=====================================================================
