@@ -53,6 +53,22 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
+// These strings are used for debug prints out the serial port.
+// The array index maps to the direction.
+String dir_strings[] =
+{
+  "INVALID direction",         
+  "Drive Forward Slight Left",
+  "Drive Forward",
+  "Drive Forward Slight Right",
+  "Drive Left",
+  "Stop",
+  "Drive Right",
+  "Drive Back Slight Left",
+  "Drive Back",
+  "Drive Back Slight Right"
+};
+
 /*=====================================================================
  * Function: setup
  */
@@ -121,26 +137,15 @@ void check_and_send_dir( void )
 {
   if(Direction != tempDirection)
   {
-     if (Direction == 1)
-        driveForwardSlightLeft();
-     else if (Direction == 2)
-        driveForward();
-     else if (Direction == 3)
-        driveForwardSlightRight();           
-     else if (Direction == 4)
-        driveLeft();
-     else if (Direction == 5)
-        stopDriving();        
-     else if (Direction == 6)
-        driveRight();     
-     else if (Direction == 7)
-        driveBackSlightLeft();
-     else if (Direction == 8)
-        driveBack();       
-     else if (Direction == 9)
-        driveBackSlightRight();       
-           
-      tempDirection = Direction;
+    // Send our new direction to the Meep.
+    XBee.print(Direction);
+
+    // Print a debug string out the serial port to show which way we're going.
+    Serial.print(dir_strings[Direction]);
+
+    // ...and remember which way we're going for next time.
+    tempDirection = Direction;
+    
   }  // end if direction changed
 }  // end check_and_send_dir
 
@@ -170,77 +175,6 @@ void loop() {
   check_meep();   
           
 }  // end of loop
-
-/*=====================================================================
- * Function: stopDriving
- */
-void stopDriving(){
-  Serial.println("Stop");
-  XBee.print('5');
-}
-
-/*=====================================================================
- * Function: driveForward
- */
-void driveForward(){
-  Serial.println("Drive Forward");
-  XBee.print('2');
-}
-
-/*=====================================================================
- * Function: driveBack
- */
-void driveBack(){
-  Serial.println("Drive Back");
-  XBee.print('8');
-}
-/*=====================================================================
- * Function: driveLeft
- */
-void driveLeft(){
-  Serial.println("Drive Left");
-  XBee.print('4');
-}
-
-/*=====================================================================
- * Function: driveRight
- */
-void driveRight(){
-  Serial.println("Drive Right");
-  XBee.print('6');
-}
-
-/*=====================================================================
- * Function: driveForwardSlightLeft
- */
-void driveForwardSlightLeft(){
-  Serial.println("Drive Forward Slight Left");
-  XBee.print('1');
-}
-
-/*=====================================================================
- * Function: driveForwardSlightRight
- */
-void driveForwardSlightRight(){
-  Serial.println("Drive Forward Slight Right");
-  XBee.print('3');
-}
-
-/*=====================================================================
- * Function: driveBackSlightRight
- */
-void driveBackSlightRight(){
-  Serial.println("Drive Back Slight Right");
-  XBee.print('9');
-}
-
-/*=====================================================================
- * Function: driveBackSlightLeft
- */
-void driveBackSlightLeft(){
-  Serial.println("Drive Back Slight Left");
-  XBee.print('7');
-}
 
 /*=====================================================================
  * Function: speedToggle
