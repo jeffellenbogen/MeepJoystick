@@ -53,6 +53,9 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
+/*=====================================================================
+ * Function: setup
+ */
 void setup() {  
   Serial.begin(9600); // Start serial communication
   XBee.begin(9600);  
@@ -73,8 +76,11 @@ void setup() {
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
   lcd.print("Joystick On");
-}
+} // end of setup
 
+/*=====================================================================
+ * Function: get_joystick_direction
+ */
 void get_joystick_direction( void )
 {
   if ((digitalRead(zippyy_switch_pin_4) == 0) && 
@@ -101,6 +107,9 @@ void get_joystick_direction( void )
     Direction = 5;  
 } // end of get_joystick_direction
 
+/*=====================================================================
+ * Function: check_and_send_dir
+ */
 void check_and_send_dir( void )
 {
   if(Direction != tempDirection)
@@ -128,6 +137,9 @@ void check_and_send_dir( void )
   }  // end if direction changed
 }  // end check_and_send_dir
 
+/*=====================================================================
+ * Function: loop
+ */
 void loop() {
 
   //Read ZIPPYY Joystick
@@ -140,63 +152,92 @@ void loop() {
   check_and_send_dir();
   
 
-   //Check the speed button.  If it's changed, send the new speed to the Meep.
-   if (digitalRead(speedButton_pin) == 0)
-   {
-     speedToggle();
-     delay(100);
-   }
+  //Check the speed button.  If it's changed, send the new speed to the Meep.
+  if (digitalRead(speedButton_pin) == 0)
+  {
+    speedToggle();
+    delay(100);
+  }
 
-   // Does the MEEP have anything for us?
-   check_meep();   
+  // Does the MEEP have anything for us?
+  check_meep();   
           
-}
+}  // end of loop
 
+/*=====================================================================
+ * Function: stopDriving
+ */
 void stopDriving(){
   Serial.println("Stop");
   XBee.print('5');
 }
 
+/*=====================================================================
+ * Function: driveForward
+ */
 void driveForward(){
   Serial.println("Drive Forward");
   XBee.print('2');
 }
 
+/*=====================================================================
+ * Function: driveBack
+ */
 void driveBack(){
   Serial.println("Drive Back");
   XBee.print('8');
 }
-
+/*=====================================================================
+ * Function: driveLeft
+ */
 void driveLeft(){
   Serial.println("Drive Left");
   XBee.print('4');
 }
 
+/*=====================================================================
+ * Function: driveRight
+ */
 void driveRight(){
   Serial.println("Drive Right");
   XBee.print('6');
 }
 
+/*=====================================================================
+ * Function: driveForwardSlightLeft
+ */
 void driveForwardSlightLeft(){
   Serial.println("Drive Forward Slight Left");
   XBee.print('1');
 }
 
+/*=====================================================================
+ * Function: driveForwardSlightRight
+ */
 void driveForwardSlightRight(){
   Serial.println("Drive Forward Slight Right");
   XBee.print('3');
 }
 
+/*=====================================================================
+ * Function: driveBackSlightRight
+ */
 void driveBackSlightRight(){
   Serial.println("Drive Back Slight Right");
   XBee.print('9');
 }
 
+/*=====================================================================
+ * Function: driveBackSlightLeft
+ */
 void driveBackSlightLeft(){
   Serial.println("Drive Back Slight Left");
   XBee.print('7');
 }
 
+/*=====================================================================
+ * Function: speedToggle
+ */
 void speedToggle(){
 
   Speed++;
@@ -235,6 +276,9 @@ void speedToggle(){
     }      
 } // of of Speed Toggle Function
 
+/*=====================================================================
+ * Function: check_meep
+ */
 void check_meep()
 {
     char c;
@@ -294,4 +338,4 @@ void check_meep()
        } //end of switch on c
     }  // end of if XBee.available
     
-}
+}  // end of check_meep
