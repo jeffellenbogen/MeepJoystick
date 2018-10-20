@@ -75,64 +75,80 @@ void setup() {
   lcd.print("Joystick On");
 }
 
+void get_joystick_direction( void )
+{
+  if ((digitalRead(zippyy_switch_pin_4) == 0) && 
+      (digitalRead(zippyy_switch_pin_2) == 0))
+    Direction = 3;
+  else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
+           (digitalRead(zippyy_switch_pin_2) == 0))
+    Direction = 9;
+  else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
+           (digitalRead(zippyy_switch_pin_3) == 0))
+    Direction = 7;
+  else if ((digitalRead(zippyy_switch_pin_3) == 0) && 
+           (digitalRead(zippyy_switch_pin_4) == 0))
+    Direction = 1;    
+  else if(digitalRead(zippyy_switch_pin_1) == 0)
+    Direction = 8;
+  else if(digitalRead(zippyy_switch_pin_4) == 0)
+    Direction = 2;
+  else if(digitalRead(zippyy_switch_pin_2) == 0)
+    Direction = 6;
+  else if(digitalRead(zippyy_switch_pin_3) == 0)
+    Direction = 4;
+  else
+    Direction = 5;  
+} // end of get_joystick_direction
+
+void check_and_send_dir( void )
+{
+  if(Direction != tempDirection)
+  {
+     if (Direction == 1)
+        driveForwardSlightLeft();
+     else if (Direction == 2)
+        driveForward();
+     else if (Direction == 3)
+        driveForwardSlightRight();           
+     else if (Direction == 4)
+        driveLeft();
+     else if (Direction == 5)
+        stopDriving();        
+     else if (Direction == 6)
+        driveRight();     
+     else if (Direction == 7)
+        driveBackSlightLeft();
+     else if (Direction == 8)
+        driveBack();       
+     else if (Direction == 9)
+        driveBackSlightRight();       
+           
+      tempDirection = Direction;
+  }  // end if direction changed
+}  // end check_and_send_dir
+
 void loop() {
 
-//Read ZIPPYY Joystick
+  //Read ZIPPYY Joystick
+  get_joystick_direction();
   
-      if ((digitalRead(zippyy_switch_pin_4) == 0) && 
-      (digitalRead(zippyy_switch_pin_2) == 0))
-        Direction = 3;
-      else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-      (digitalRead(zippyy_switch_pin_2) == 0))
-        Direction = 9;
-      else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-      (digitalRead(zippyy_switch_pin_3) == 0))
-        Direction = 7;
-      else if ((digitalRead(zippyy_switch_pin_3) == 0) && 
-      (digitalRead(zippyy_switch_pin_4) == 0))
-        Direction = 1;    
-      else if(digitalRead(zippyy_switch_pin_1) == 0)
-        Direction = 8;
-      else if(digitalRead(zippyy_switch_pin_4) == 0)
-        Direction = 2;
-      else if(digitalRead(zippyy_switch_pin_2) == 0)
-        Direction = 6;
-      else if(digitalRead(zippyy_switch_pin_3) == 0)
-        Direction = 4;
-      else
-        Direction = 5;  
-       delay (100);
+  delay (100);
        
-//Check to see if joystick direction has changed
+  //Check to see if joystick direction has changed.  If
+  //it has, send the appropriate command to the Meep.
+  check_and_send_dir();
+  
 
-      if(Direction != tempDirection){
-         if (Direction == 1)
-            driveForwardSlightLeft();
-         else if (Direction == 2)
-            driveForward();
-         else if (Direction == 3)
-            driveForwardSlightRight();           
-         else if (Direction == 4)
-            driveLeft();
-         else if (Direction == 5)
-            stopDriving();        
-         else if (Direction == 6)
-            driveRight();     
-         else if (Direction == 7)
-            driveBackSlightLeft();
-         else if (Direction == 8)
-            driveBack();       
-         else if (Direction == 9)
-            driveBackSlightRight();       
-           
-         tempDirection = Direction;
-      }
+   //Check the speed button.  If it's changed, send the new speed to the Meep.
+   if (digitalRead(speedButton_pin) == 0)
+   {
+     speedToggle();
+     delay(100);
+   }
 
-      if (digitalRead(speedButton_pin) == 0){
-        speedToggle();
-        delay(100);
-      }
-      check_meep();   
+   // Does the MEEP have anything for us?
+   check_meep();   
           
 }
 
@@ -279,4 +295,3 @@ void check_meep()
     }  // end of if XBee.available
     
 }
-
