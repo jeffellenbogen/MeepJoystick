@@ -141,13 +141,33 @@ void check_and_send_dir( void )
     XBee.print(Direction);
 
     // Print a debug string out the serial port to show which way we're going.
-    Serial.print(dir_strings[Direction]);
+    Serial.println(dir_strings[Direction]);
 
     // ...and remember which way we're going for next time.
     tempDirection = Direction;
     
   }  // end if direction changed
 }  // end check_and_send_dir
+
+/*=====================================================================
+ * Function: check_and_send_speed
+ */
+void check_and_send_speed( void )
+{
+  static int last_speed_button_state = 1;  // looking for high to low transitions.
+  int current_speed_button_state;
+
+  current_speed_button_state = digitalRead(speedButton_pin);
+
+  // This may actually need to be debounced...
+  if ((last_speed_button_state == 1) && (current_speed_button_state == 0))
+  {
+    speedToggle();
+  }
+
+  last_speed_button_state = current_speed_button_state;
+
+} // end of check_and_send_speed
 
 /*=====================================================================
  * Function: loop
@@ -157,20 +177,16 @@ void loop() {
   //Read ZIPPYY Joystick
   get_joystick_direction();
   
-  delay (100);
+  // delay (100);
        
   //Check to see if joystick direction has changed.  If
   //it has, send the appropriate command to the Meep.
   check_and_send_dir();
   
 
-  //Check the speed button.  If it's changed, send the new speed to the Meep.
-  if (digitalRead(speedButton_pin) == 0)
-  {
-    speedToggle();
-    delay(100);
-  }
-
+  //Check the speed button to see if we need to send anew speed to the Meep.
+  check_and_send_speed();
+  
   // Does the MEEP have anything for us?
   check_meep();   
           
@@ -185,36 +201,38 @@ void speedToggle(){
   if (Speed >3)
     Speed = 1;
 
-  if (Speed == 1){
+  if (Speed == 1)
+  {
     Serial.println("Slow Mo Speed");  // What the joystick is sending
     XBee.print('S');
     analogWrite(LED_pinR, 255);
     analogWrite(LED_pinG, 0);
     analogWrite(LED_pinB, 0);
-    delay(50);
-    XBee.print('S');
-    }
+    //delay(50);
+    //XBee.print('S');  
+  }
 
-  if (Speed == 2){
+  if (Speed == 2)
+  {
     Serial.println("Regular Speed!");
     XBee.print('R');
     analogWrite(LED_pinR, 210);
     analogWrite(LED_pinG, 150);
     analogWrite(LED_pinB, 0);
-    delay(50);
-    XBee.print('R');
-    }       
+    //delay(50);
+    //XBee.print('R');
+  }       
 
-    
-  if (Speed == 3){
+  if (Speed == 3)
+  {
     Serial.println("Turbo Speed!");
     XBee.print('T');
     analogWrite(LED_pinR, 0);
     analogWrite(LED_pinG, 255);
     analogWrite(LED_pinB, 0);
-    delay(50);
-    XBee.print('T');
-    }      
+    //delay(50);
+    //XBee.print('T');
+  }      
 } // of of Speed Toggle Function
 
 /*=====================================================================
