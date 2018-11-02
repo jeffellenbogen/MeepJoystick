@@ -133,7 +133,7 @@ void setup() {
   lcd.clear();
   lcd.print("Joystick On");
 
-  Serial.println("Joystick inited");
+  Serial.println("Joystick initialized");
   
 } // end of setup
 
@@ -198,6 +198,26 @@ void check_and_send_dir( void )
 }  // end check_and_send_dir
 
 /*=====================================================================
+ * Function: check_and_send_speed
+ */
+void check_and_send_speed( void )
+{
+  static int last_speed_button_state = 1;  // looking for high to low transitions.
+  int current_speed_button_state;
+  
+  current_speed_button_state = digitalRead(speedButton_pin);
+  
+  
+  if ((last_speed_button_state == 1) && (current_speed_button_state == 0))
+  {
+    speedToggle();
+  }
+
+  last_speed_button_state = current_speed_button_state;
+
+} // end of check_and_send_speed
+
+/*=====================================================================
  * Function: loop
  */
 void loop() {
@@ -205,20 +225,16 @@ void loop() {
   //Read ZIPPYY Joystick
   get_joystick_direction();
   
-  delay (100);
+  // delay (100);
        
   //Check to see if joystick direction has changed.  If
   //it has, send the appropriate command to the Meep.
   check_and_send_dir();
   
 
-  //Check the speed button.  If it's changed, send the new speed to the Meep.
-  if (digitalRead(speedButton_pin) == 0)
-  {
-    speedToggle();
-    delay(100);
-  }
-
+  //Check the speed button to see if we need to send anew speed to the Meep.
+  check_and_send_speed();
+  
   // Does the MEEP have anything for us?
   check_meep();   
 
@@ -235,33 +251,36 @@ void speedToggle(){
   if (Speed >3)
     Speed = 1;
 
-  if (Speed == 1){
+  if (Speed == 1)
+  {
     Serial.println("Slow Mo Speed");  // What the joystick is sending
     XBee.print('S');
     analogWrite(LED_pinR, 255);
     analogWrite(LED_pinG, 0);
     analogWrite(LED_pinB, 0);
-    ack_state.last_sent_speed = 'S';
-    }
 
-  if (Speed == 2){
+    ack_state.last_sent_speed = 'S';
+  }
+
+  if (Speed == 2)
+  {
     Serial.println("Regular Speed!");
     XBee.print('R');
     analogWrite(LED_pinR, 210);
     analogWrite(LED_pinG, 150);
     analogWrite(LED_pinB, 0);
     ack_state.last_sent_speed = 'R';
-    }       
+  }       
 
-    
-  if (Speed == 3){
+  if (Speed == 3)
+  {
     Serial.println("Turbo Speed!");
     XBee.print('T');
     analogWrite(LED_pinR, 0);
     analogWrite(LED_pinG, 255);
     analogWrite(LED_pinB, 0);
     ack_state.last_sent_speed = 'T';
-    }      
+  }      
 
   // remember the last speed we sent
   ack_state.last_sent_speed_time = millis();
