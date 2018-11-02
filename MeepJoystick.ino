@@ -367,7 +367,7 @@ void check_meep()
 /*=====================================================================
  * Function: check_for_resends
  */
-#define ACK_TIMEOUT 50  // in ms. 
+#define ACK_TIMEOUT 250  // in ms. 
 void check_for_resends( void )
 {
   unsigned long current_time;
