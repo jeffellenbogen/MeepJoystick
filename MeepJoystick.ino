@@ -53,6 +53,25 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
+// These strings are used for debug prints out the serial port.
+// The array index maps to the direction.
+String dir_strings[] =
+{
+  "INVALID direction",         
+  "Drive Forward Slight Left",
+  "Drive Forward",
+  "Drive Forward Slight Right",
+  "Drive Left",
+  "Stop",
+  "Drive Right",
+  "Drive Back Slight Left",
+  "Drive Back",
+  "Drive Back Slight Right"
+};
+
+/*=====================================================================
+ * Function: setup
+ */
 void setup() {  
   Serial.begin(9600); // Start serial communication
   XBee.begin(9600);  
@@ -73,114 +92,93 @@ void setup() {
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
   lcd.print("Joystick On");
-}
+} // end of setup
 
+/*=====================================================================
+ * Function: get_joystick_direction
+ */
+void get_joystick_direction( void )
+{
+  int up;
+  int down;
+  int left;
+  int right;
+
+  // the joystick pins are active low; therefore to 
+  // get the logical direction, we need to invert what
+  // we read.
+  up =    !digitalRead(zippyy_switch_pin_4);
+  down =  !digitalRead(zippyy_switch_pin_1);
+  left =  !digitalRead(zippyy_switch_pin_3);
+  right = !digitalRead(zippyy_switch_pin_2);
+
+  if (up)
+  {
+    if (left)       Direction = 1;
+    else if (right) Direction = 3;
+    else            Direction = 2;
+  }
+  else if (down)
+  {
+    if (left)       Direction = 7;
+    else if (right) Direction = 9;
+    else            Direction = 8;
+  }
+  else if (left)    Direction = 4;
+  else if (right)   Direction = 6;
+  else              Direction = 5;
+  
+} // end of get_joystick_direction
+
+/*=====================================================================
+ * Function: check_and_send_dir
+ */
+void check_and_send_dir( void )
+{
+  if(Direction != tempDirection)
+  {
+    // Send our new direction to the Meep.
+    XBee.print(Direction);
+
+    // Print a debug string out the serial port to show which way we're going.
+    Serial.println(dir_strings[Direction]);
+
+    // ...and remember which way we're going for next time.
+    tempDirection = Direction;
+    
+  }  // end if direction changed
+}  // end check_and_send_dir
+
+/*=====================================================================
+ * Function: loop
+ */
 void loop() {
 
-//Read ZIPPYY Joystick
+  //Read ZIPPYY Joystick
+  get_joystick_direction();
   
-      if ((digitalRead(zippyy_switch_pin_4) == 0) && 
-      (digitalRead(zippyy_switch_pin_2) == 0))
-        Direction = 3;
-      else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-      (digitalRead(zippyy_switch_pin_2) == 0))
-        Direction = 9;
-      else if ((digitalRead(zippyy_switch_pin_1) == 0) && 
-      (digitalRead(zippyy_switch_pin_3) == 0))
-        Direction = 7;
-      else if ((digitalRead(zippyy_switch_pin_3) == 0) && 
-      (digitalRead(zippyy_switch_pin_4) == 0))
-        Direction = 1;    
-      else if(digitalRead(zippyy_switch_pin_1) == 0)
-        Direction = 8;
-      else if(digitalRead(zippyy_switch_pin_4) == 0)
-        Direction = 2;
-      else if(digitalRead(zippyy_switch_pin_2) == 0)
-        Direction = 6;
-      else if(digitalRead(zippyy_switch_pin_3) == 0)
-        Direction = 4;
-      else
-        Direction = 5;  
-       delay (100);
+  delay (100);
        
-//Check to see if joystick direction has changed
+  //Check to see if joystick direction has changed.  If
+  //it has, send the appropriate command to the Meep.
+  check_and_send_dir();
+  
 
-      if(Direction != tempDirection){
-         if (Direction == 1)
-            driveForwardSlightLeft();
-         else if (Direction == 2)
-            driveForward();
-         else if (Direction == 3)
-            driveForwardSlightRight();           
-         else if (Direction == 4)
-            driveLeft();
-         else if (Direction == 5)
-            stopDriving();        
-         else if (Direction == 6)
-            driveRight();     
-         else if (Direction == 7)
-            driveBackSlightLeft();
-         else if (Direction == 8)
-            driveBack();       
-         else if (Direction == 9)
-            driveBackSlightRight();       
-           
-         tempDirection = Direction;
-      }
+  //Check the speed button.  If it's changed, send the new speed to the Meep.
+  if (digitalRead(speedButton_pin) == 0)
+  {
+    speedToggle();
+    delay(100);
+  }
 
-      if (digitalRead(speedButton_pin) == 0){
-        speedToggle();
-        delay(100);
-      }
-      check_meep();   
+  // Does the MEEP have anything for us?
+  check_meep();   
           
-}
+}  // end of loop
 
-void stopDriving(){
-  Serial.println("Stop");
-  XBee.print('5');
-}
-
-void driveForward(){
-  Serial.println("Drive Forward");
-  XBee.print('2');
-}
-
-void driveBack(){
-  Serial.println("Drive Back");
-  XBee.print('8');
-}
-
-void driveLeft(){
-  Serial.println("Drive Left");
-  XBee.print('4');
-}
-
-void driveRight(){
-  Serial.println("Drive Right");
-  XBee.print('6');
-}
-
-void driveForwardSlightLeft(){
-  Serial.println("Drive Forward Slight Left");
-  XBee.print('1');
-}
-
-void driveForwardSlightRight(){
-  Serial.println("Drive Forward Slight Right");
-  XBee.print('3');
-}
-
-void driveBackSlightRight(){
-  Serial.println("Drive Back Slight Right");
-  XBee.print('9');
-}
-
-void driveBackSlightLeft(){
-  Serial.println("Drive Back Slight Left");
-  XBee.print('7');
-}
-
+/*=====================================================================
+ * Function: speedToggle
+ */
 void speedToggle(){
 
   Speed++;
@@ -219,6 +217,9 @@ void speedToggle(){
     }      
 } // of of Speed Toggle Function
 
+/*=====================================================================
+ * Function: check_meep
+ */
 void check_meep()
 {
     char c;
@@ -278,5 +279,4 @@ void check_meep()
        } //end of switch on c
     }  // end of if XBee.available
     
-}
-
+}  // end of check_meep
