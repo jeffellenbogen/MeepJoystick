@@ -4,14 +4,6 @@
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
 
-#if !defined(TRUE)
-#define TRUE 1
-#endif
-
-#if !defined(FALSE)
-#define FALSE 0
-#endif
-
 /*================
  * LCD CONNECTIONS:  (note...we're using 4 bit mode here...)
  *   1 to GND
@@ -102,11 +94,11 @@ String dir_strings[] =
  */
 void init_ack_state( void )
 {
-  ack_state.outstanding_dir = FALSE;
+  ack_state.outstanding_dir = false;
   ack_state.last_sent_dir = '5';
   ack_state.last_sent_dir_time = 0;
 
-  ack_state.outstanding_speed = FALSE;
+  ack_state.outstanding_speed = false;
   ack_state.last_sent_speed = 'R';
   ack_state.last_sent_speed_time = 0;
   
@@ -189,7 +181,7 @@ void check_and_send_dir( void )
     XBee.print(Direction);
 
     // and remember when we sent it...
-    ack_state.outstanding_dir = TRUE;
+    ack_state.outstanding_dir = true;
     ack_state.last_sent_dir = Direction + '0';  // convert # to char
     ack_state.last_sent_dir_time = millis();
 
@@ -270,7 +262,7 @@ void speedToggle(){
 
   // remember the last speed we sent
   ack_state.last_sent_speed_time = millis();
-  ack_state.outstanding_speed = TRUE;
+  ack_state.outstanding_speed = true;
   
 } // of of Speed Toggle Function
 
@@ -292,7 +284,7 @@ void check_meep()
        // check for speed acks
        if ((ack_state.outstanding_speed) && (ack_state.last_sent_speed == c))
        {
-          ack_state.outstanding_speed = FALSE;
+          ack_state.outstanding_speed = false;
           stats.successful_acks++;
           Serial.println("speed acked");
        }
@@ -300,7 +292,7 @@ void check_meep()
        // then check for dir acks.   Note only one of these really should fire...
        if ((ack_state.outstanding_dir) && (ack_state.last_sent_dir == c))
        {
-         ack_state.outstanding_dir = FALSE;
+         ack_state.outstanding_dir = false;
          stats.successful_acks++; 
          Serial.println("dir acked");
        }
