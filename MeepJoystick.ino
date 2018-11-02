@@ -141,7 +141,7 @@ void check_and_send_dir( void )
     XBee.print(Direction);
 
     // Print a debug string out the serial port to show which way we're going.
-    Serial.print(dir_strings[Direction]);
+    Serial.println(dir_strings[Direction]);
 
     // ...and remember which way we're going for next time.
     tempDirection = Direction;
