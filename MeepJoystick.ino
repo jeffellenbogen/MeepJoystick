@@ -53,6 +53,9 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
+// Time, in ms, the joystick will wait until resending a command
+#define ACK_TIMEOUT 250   
+
 typedef struct
 {
   bool          outstanding_dir;
@@ -367,7 +370,6 @@ void check_meep()
 /*=====================================================================
  * Function: check_for_resends
  */
-#define ACK_TIMEOUT 250  // in ms. 
 void check_for_resends( void )
 {
   unsigned long current_time;
