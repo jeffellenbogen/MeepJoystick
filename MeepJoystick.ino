@@ -53,6 +53,30 @@ int tempDirection = 5;
 int Speed = 2;
 int Direction;
 
+// Time, in ms, the joystick will wait until resending a command
+#define ACK_TIMEOUT 250   
+
+typedef struct
+{
+  bool          outstanding_dir;
+  char          last_sent_dir;
+  unsigned long last_sent_dir_time;
+
+  bool          outstanding_speed;
+  char          last_sent_speed;
+  unsigned long last_sent_speed_time;
+} ack_state_type;
+
+static ack_state_type ack_state;
+
+typedef struct
+{
+  int successful_acks;
+  int resends;
+} stats_type;
+
+stats_type stats={0,0};
+
 // These strings are used for debug prints out the serial port.
 // The array index maps to the direction.
 String dir_strings[] =
@@ -68,6 +92,20 @@ String dir_strings[] =
   "Drive Back",
   "Drive Back Slight Right"
 };
+/*=====================================================================
+ * Function: init_ack_state
+ */
+void init_ack_state( void )
+{
+  ack_state.outstanding_dir = false;
+  ack_state.last_sent_dir = '5';
+  ack_state.last_sent_dir_time = 0;
+
+  ack_state.outstanding_speed = false;
+  ack_state.last_sent_speed = 'R';
+  ack_state.last_sent_speed_time = 0;
+  
+}  // end of init_ack_state
 
 /*=====================================================================
  * Function: setup
@@ -89,6 +127,8 @@ void setup() {
   analogWrite(LED_pinG, 150); 
   analogWrite(LED_pinB, 0);
 
+  init_ack_state();
+  
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
   lcd.print("Joystick On");
@@ -143,6 +183,11 @@ void check_and_send_dir( void )
     // Send our new direction to the Meep.
     XBee.print(Direction);
 
+    // and remember when we sent it...
+    ack_state.outstanding_dir = true;
+    ack_state.last_sent_dir = Direction + '0';  // convert # to char
+    ack_state.last_sent_dir_time = millis();
+
     // Print a debug string out the serial port to show which way we're going.
     Serial.println(dir_strings[Direction]);
 
@@ -192,6 +237,8 @@ void loop() {
   
   // Does the MEEP have anything for us?
   check_meep();   
+
+  check_for_resends();
           
 }  // end of loop
 
@@ -211,8 +258,8 @@ void speedToggle(){
     analogWrite(LED_pinR, 255);
     analogWrite(LED_pinG, 0);
     analogWrite(LED_pinB, 0);
-    //delay(50);
-    //XBee.print('S');  
+
+    ack_state.last_sent_speed = 'S';
   }
 
   if (Speed == 2)
@@ -222,8 +269,7 @@ void speedToggle(){
     analogWrite(LED_pinR, 210);
     analogWrite(LED_pinG, 150);
     analogWrite(LED_pinB, 0);
-    //delay(50);
-    //XBee.print('R');
+    ack_state.last_sent_speed = 'R';
   }       
 
   if (Speed == 3)
@@ -233,69 +279,104 @@ void speedToggle(){
     analogWrite(LED_pinR, 0);
     analogWrite(LED_pinG, 255);
     analogWrite(LED_pinB, 0);
-    //delay(50);
-    //XBee.print('T');
+    ack_state.last_sent_speed = 'T';
   }      
 
-  Serial.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+  // remember the last speed we sent
+  ack_state.last_sent_speed_time = millis();
+  ack_state.outstanding_speed = true;
   
 } // of of Speed Toggle Function
+
 
 /*=====================================================================
  * Function: check_meep
  */
 void check_meep()
 {
+
     char c;
-    if (XBee.available())
+    while (XBee.available())
     {
        c = XBee.read();
+
+       Serial.print("RX Char: ");
+       Serial.println(c);
+
+       // check for speed acks
+       if ((ack_state.outstanding_speed) && (ack_state.last_sent_speed == c))
+       {
+          ack_state.outstanding_speed = false;
+          stats.successful_acks++;
+          Serial.println("speed acked");
+       }
+
+       // then check for dir acks.   Note only one of these really should fire...
+       if ((ack_state.outstanding_dir) && (ack_state.last_sent_dir == c))
+       {
+         ack_state.outstanding_dir = false;
+         stats.successful_acks++; 
+         Serial.println("dir acked");
+       }
+
+       // now print what we've got on the LCD.
        switch(c)
        {
          case 'R': 
             lcd.setCursor(0, 1);
             lcd.print("REGULAR ");
          break;
+         
          case 'T': 
             lcd.setCursor(0, 1);
             lcd.print("TURBO!!! ");
          break;
+         
          case 'S': 
             lcd.setCursor(0, 1);
             lcd.print("SLOW MO ");
          break; 
+         
          case '1': 
             lcd.setCursor(0, 0);
             lcd.print("Forw. Slgt. LEFT");
          break;
+
          case '2': 
             lcd.setCursor(0, 0);
             lcd.print("FORWARD         ");
          break; 
+         
          case '3': 
             lcd.setCursor(0, 0);
             lcd.print("Forw. Slgt. RGHT");
          break;  
+         
          case '4': 
             lcd.setCursor(0, 0);
             lcd.print("LEFT            ");
          break;   
+         
          case '5': 
             lcd.setCursor(0, 0);
             lcd.print("STOP            ");
          break;    
+         
          case '6': 
             lcd.setCursor(0, 0);
             lcd.print("RIGHT           ");
          break;  
+         
          case '7': 
             lcd.setCursor(0, 0);
             lcd.print("Back  Slgt. LEFT");
          break;
+         
          case '8': 
             lcd.setCursor(0, 0);
             lcd.print("BACKWARD        ");
          break; 
+         
          case '9': 
             lcd.setCursor(0, 0);
             lcd.print("Back Slgt. RIGHT");
@@ -304,3 +385,48 @@ void check_meep()
     }  // end of if XBee.available
     
 }  // end of check_meep
+
+/*=====================================================================
+ * Function: check_for_resends
+ */
+void check_for_resends( void )
+{
+  unsigned long current_time;
+
+  current_time = millis();
+  
+  if ((ack_state.outstanding_dir) &&
+      (current_time > ack_state.last_sent_dir_time + ACK_TIMEOUT))
+  {
+    XBee.print(ack_state.last_sent_dir);
+    ack_state.last_sent_dir_time = current_time;
+
+    stats.resends++;
+
+    print_resends();
+    
+    Serial.print("Resend dir: ");
+    Serial.println(ack_state.last_sent_dir);
+  }
+
+  if ((ack_state.outstanding_speed) &&
+      (current_time > ack_state.last_sent_speed_time + ACK_TIMEOUT))
+  {
+    XBee.print(ack_state.last_sent_speed);
+    ack_state.last_sent_speed_time = current_time;
+
+    stats.resends++;
+
+    print_resends();
+
+    Serial.print("Resend speed: ");
+    Serial.println(ack_state.last_sent_speed);
+  }
+ 
+}
+
+void print_resends()
+{
+  lcd.setCursor(11, 1);
+  lcd.print(stats.resends);
+}
