@@ -63,6 +63,11 @@ int Direction;
 // Time, in ms, the joystick will wait until resending a command
 #define ACK_TIMEOUT 250   
 
+// if we haven't sent something to the meep in a while, send 
+// a keep-alive command.  Note this time needs to be LESS than the
+// keep-alive time on the meep side.
+#define KEEP_ALIVE_MS 500
+
 typedef struct
 {
   bool          outstanding_dir;
@@ -246,6 +251,9 @@ void loop() {
 
   // Print any debounces on the LCD, for debug purposes.
   print_debounces();
+
+  // If we haven't sent anything to the meep in a while, send a keep-alive.
+  check_for_keep_alive();
           
 }  // end of loop
 
@@ -468,4 +476,25 @@ void print_debounces( void )
   lcd.setCursor(14, 0);
   lcd.print(speed_debounces);
   
+}
+
+/*=====================================================================
+ * Function: check_for_keep_alive
+ */
+void check_for_keep_alive( void )
+{
+  unsigned long        current_time;
+  bool                 keep_alive_needed=true;
+  static unsigned long last_sent_keep_alive=0;
+
+  current_time = millis();
+
+   if ((current_time > ack_state.last_sent_dir_time + KEEP_ALIVE_MS) &&
+       (current_time > ack_state.last_sent_speed_time + KEEP_ALIVE_MS) &&
+       (current_time > last_sent_keep_alive + KEEP_ALIVE_MS))
+   {
+     Serial.println("Sending Keep Alive");
+     XBee.print('K');
+     last_sent_keep_alive = current_time;
+   }
 }
