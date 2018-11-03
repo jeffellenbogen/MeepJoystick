@@ -143,8 +143,10 @@ void setup() {
   
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
-  lcd.print("Joystick On");
-
+  lcd.print("Joystick");
+  lcd.setCursor(0,1);
+  lcd.print("On");
+  
   Serial.println("Joystick initialized");
   
 } // end of setup
