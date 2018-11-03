@@ -3,6 +3,7 @@
 
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
+#include <debouncer.h>
 
 /*================
  * LCD CONNECTIONS:  (note...we're using 4 bit mode here...)
@@ -44,6 +45,12 @@ SoftwareSerial XBee(2, 3); // Arduino RX, TX (XBee Dout, Din)
 #define zippyy_switch_pin_3 8   //red     
 #define zippyy_switch_pin_4 9   //blue
 #define speedButton_pin 10
+
+Debouncer debounceUp(zippyy_switch_pin_4);
+Debouncer debounceDown(zippyy_switch_pin_1);
+Debouncer debounceLeft(zippyy_switch_pin_3);
+Debouncer debounceRight(zippyy_switch_pin_2);
+Debouncer debounceSpeed(speedButton_pin);
 
 #define LED_pinR 11
 #define LED_pinG 12
@@ -150,11 +157,11 @@ void get_joystick_direction( void )
   // the joystick pins are active low; therefore to 
   // get the logical direction, we need to invert what
   // we read.
-  up =    !digitalRead(zippyy_switch_pin_4);
-  down =  !digitalRead(zippyy_switch_pin_1);
-  left =  !digitalRead(zippyy_switch_pin_3);
-  right = !digitalRead(zippyy_switch_pin_2);
-
+  up =    !debounceUp.read();
+  down =  !debounceDown.read();
+  left =  !debounceLeft.read();
+  right = !debounceRight.read();
+  
   if (up)
   {
     if (left)       Direction = 1;
@@ -205,8 +212,7 @@ void check_and_send_speed( void )
   static int last_speed_button_state = 1;  // looking for high to low transitions.
   int current_speed_button_state;
   
-  current_speed_button_state = digitalRead(speedButton_pin);
-  
+  current_speed_button_state = debounceSpeed.read();
   
   if ((last_speed_button_state == 1) && (current_speed_button_state == 0))
   {
@@ -224,21 +230,22 @@ void loop() {
 
   //Read ZIPPYY Joystick
   get_joystick_direction();
-  
-  // delay (100);
        
   //Check to see if joystick direction has changed.  If
   //it has, send the appropriate command to the Meep.
   check_and_send_dir();
   
-
   //Check the speed button to see if we need to send anew speed to the Meep.
   check_and_send_speed();
   
   // Does the MEEP have anything for us?
   check_meep();   
 
+  // If any of our commands have timed out, resend them.
   check_for_resends();
+
+  // Print any debounces on the LCD, for debug purposes.
+  print_debounces();
           
 }  // end of loop
 
@@ -258,7 +265,6 @@ void speedToggle(){
     analogWrite(LED_pinR, 255);
     analogWrite(LED_pinG, 0);
     analogWrite(LED_pinB, 0);
-
     ack_state.last_sent_speed = 'S';
   }
 
@@ -329,7 +335,7 @@ void check_meep()
          
          case 'T': 
             lcd.setCursor(0, 1);
-            lcd.print("TURBO!!! ");
+            lcd.print("TURBO!!!");
          break;
          
          case 'S': 
@@ -339,47 +345,47 @@ void check_meep()
          
          case '1': 
             lcd.setCursor(0, 0);
-            lcd.print("Forw. Slgt. LEFT");
+            lcd.print("F-S-LEFT");
          break;
 
          case '2': 
             lcd.setCursor(0, 0);
-            lcd.print("FORWARD         ");
+            lcd.print("FORWARD ");
          break; 
          
          case '3': 
             lcd.setCursor(0, 0);
-            lcd.print("Forw. Slgt. RGHT");
+            lcd.print("F-S-RGHT");
          break;  
          
          case '4': 
             lcd.setCursor(0, 0);
-            lcd.print("LEFT            ");
+            lcd.print("LEFT    ");
          break;   
          
          case '5': 
             lcd.setCursor(0, 0);
-            lcd.print("STOP            ");
+            lcd.print("STOP    ");
          break;    
          
          case '6': 
             lcd.setCursor(0, 0);
-            lcd.print("RIGHT           ");
+            lcd.print("RIGHT   ");
          break;  
          
          case '7': 
             lcd.setCursor(0, 0);
-            lcd.print("Back  Slgt. LEFT");
+            lcd.print("B-S-LEFT");
          break;
          
          case '8': 
             lcd.setCursor(0, 0);
-            lcd.print("BACKWARD        ");
+            lcd.print("BACKWARD");
          break; 
          
          case '9': 
             lcd.setCursor(0, 0);
-            lcd.print("Back Slgt. RIGHT");
+            lcd.print("B-S-RGHT");
          break;                                                                      
        } //end of switch on c
     }  // end of if XBee.available
@@ -425,8 +431,41 @@ void check_for_resends( void )
  
 }
 
-void print_resends()
+/*=====================================================================
+ * Function: print_resends
+ */
+void print_resends( void )
 {
   lcd.setCursor(11, 1);
   lcd.print(stats.resends);
+}
+
+/*=====================================================================
+ * Function: print_debounces
+ */
+void print_debounces( void )
+{
+  int speed_debounces;
+  int joystick_debounces;
+  
+  joystick_debounces =
+    debounceUp.getNumBounces() +
+    debounceDown.getNumBounces() +
+    debounceLeft.getNumBounces() +
+    debounceRight.getNumBounces();
+
+  // For LCD display purposes, we only want 3 digits for debounce counts.
+  if (joystick_debounces > 999) joystick_debounces = 999;
+
+  speed_debounces = debounceSpeed.getNumBounces();
+
+  // Technically, the debouncer currently limits us at 999...but I'm putting this in
+  // here as a safety check in case that implementation ever changes.
+  if (speed_debounces > 999) speed_debounces = 999;
+
+  lcd.setCursor(10, 0);
+  lcd.print(joystick_debounces);
+  lcd.setCursor(14, 0);
+  lcd.print(speed_debounces);
+  
 }
