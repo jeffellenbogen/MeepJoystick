@@ -85,9 +85,12 @@ typedef struct
 {
   int successful_acks;
   int resends;
+  int worst_case_ack_time;
+  float average_ack_time;
+  float num_ack_time_points;
 } stats_type;
 
-stats_type stats={0,0};
+stats_type stats={0,0,0,0,0};
 
 // These strings are used for debug prints out the serial port.
 // The array index maps to the direction.
@@ -104,6 +107,44 @@ String dir_strings[] =
   "Drive Back",
   "Drive Back Slight Right"
 };
+
+/*=====================================================================
+ * Function: store_ack_time
+ */
+void store_ack_time( int ack_time )
+{
+  float filter_weight;
+  float input_weight;
+  float weighted_filter;
+  float weighted_input;
+  
+  if (ack_time > stats.worst_case_ack_time)
+  {
+    stats.worst_case_ack_time = ack_time;
+  }
+
+  // calculate running average.  
+  stats.num_ack_time_points++;
+  filter_weight = (stats.num_ack_time_points - 1) / stats.num_ack_time_points;
+  input_weight = 1/stats.num_ack_time_points;
+  weighted_filter = stats.average_ack_time * filter_weight;
+  weighted_input = ack_time * input_weight;
+  stats.average_ack_time = weighted_filter + weighted_input;
+}
+
+/*=====================================================================
+ * Function: print_ack_stats
+ */
+ void print_ack_stats( void )
+ {
+   Serial.print("worst case: ");
+   Serial.print(stats.worst_case_ack_time);
+   Serial.print(" average: ");
+   Serial.print(stats.average_ack_time);
+   Serial.print(" num_pts: ");
+   Serial.println(stats.num_ack_time_points);
+ }
+
 /*=====================================================================
  * Function: init_ack_state
  */
@@ -148,7 +189,7 @@ void setup() {
   lcd.print("On");
   
   Serial.println("Joystick initialized");
-  
+ 
 } // end of setup
 
 /*=====================================================================
@@ -310,6 +351,8 @@ void speedToggle(){
  */
 void check_meep()
 {
+    unsigned int current_time;
+    int ack_time;
 
     char c;
     while (XBee.available())
@@ -321,10 +364,17 @@ void check_meep()
 
        // check for speed acks
        if ((ack_state.outstanding_speed) && (ack_state.last_sent_speed == c))
-       {
+       {      
           ack_state.outstanding_speed = false;
           stats.successful_acks++;
-          Serial.println("speed acked");
+
+          current_time = millis();
+          ack_time= current_time - ack_state.last_sent_speed_time;
+          store_ack_time(ack_time);
+   
+          Serial.print("speed acked, time=");
+          Serial.println(ack_time);
+          print_ack_stats();
        }
 
        // then check for dir acks.   Note only one of these really should fire...
@@ -332,7 +382,14 @@ void check_meep()
        {
          ack_state.outstanding_dir = false;
          stats.successful_acks++; 
-         Serial.println("dir acked");
+
+         current_time = millis();
+         ack_time = current_time - ack_state.last_sent_dir_time;
+         store_ack_time(ack_time);
+         
+         Serial.print("dir acked, time=");
+         Serial.println(ack_time);
+         print_ack_stats();
        }
 
        // now print what we've got on the LCD.
