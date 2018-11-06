@@ -108,6 +108,17 @@ String dir_strings[] =
   "Drive Back Slight Right"
 };
 
+typedef enum
+{
+  DISPLAY_MEEP,
+  DISPLAY_DEBOUNCE,
+  DISPLAY_ACKS,
+  NUM_DISPLAY_MODES
+} display_type;
+
+int display_mode;
+#define DISPLAY_TOGGLE_TIME_MS 5000
+
 /*=====================================================================
  * Function: store_ack_time
  */
@@ -181,12 +192,11 @@ void setup() {
   analogWrite(LED_pinB, 0);
 
   init_ack_state();
-  
+
   lcd.begin(LCD_CHARS, LCD_ROWS);
   lcd.clear();
-  lcd.print("Joystick");
-  lcd.setCursor(0,1);
-  lcd.print("On");
+  lcd.print("Joystick ON");
+  display_mode = DISPLAY_MEEP;
   
   Serial.println("Joystick initialized");
  
@@ -259,14 +269,32 @@ void check_and_send_speed( void )
 {
   static int last_speed_button_state = 1;  // looking for high to low transitions.
   int current_speed_button_state;
+  static unsigned long start_down_time=0;
+  unsigned long current_time;
   
   current_speed_button_state = debounceSpeed.read();
+  current_time = millis();
   
   if ((last_speed_button_state == 1) && (current_speed_button_state == 0))
   {
     speedToggle();
+    start_down_time = current_time;
   }
 
+  if ((last_speed_button_state == 0) && (current_speed_button_state == 0))
+  {
+    // the button has stayed down.  Has enough time passed to trigger a display
+    // toggle?
+    if (current_time > start_down_time + DISPLAY_TOGGLE_TIME_MS)
+    {
+      toggle_display();
+
+      // If the user *keeps* holding down the button, we want to keep toggling...but only 
+      // after the requisite time.
+      start_down_time = current_time;
+    }
+  }
+  
   last_speed_button_state = current_speed_button_state;
 
 } // end of check_and_send_speed
@@ -292,11 +320,10 @@ void loop() {
   // If any of our commands have timed out, resend them.
   check_for_resends();
 
-  // Print any debounces on the LCD, for debug purposes.
-  print_debounces();
-
   // If we haven't sent anything to the meep in a while, send a keep-alive.
   check_for_keep_alive();
+
+  update_display();
           
 }  // end of loop
 
@@ -393,68 +420,71 @@ void check_meep()
        }
 
        // now print what we've got on the LCD.
-       switch(c)
+       if (display_mode == DISPLAY_MEEP)
        {
-         case 'R': 
-            lcd.setCursor(0, 1);
-            lcd.print("REGULAR ");
-         break;
+         switch(c)
+         {
+           case 'R': 
+              lcd.setCursor(0, 1);
+              lcd.print("REGULAR ");
+           break;
          
-         case 'T': 
-            lcd.setCursor(0, 1);
-            lcd.print("TURBO!!!");
-         break;
+           case 'T': 
+              lcd.setCursor(0, 1);
+              lcd.print("TURBO!!!");
+           break;
          
-         case 'S': 
-            lcd.setCursor(0, 1);
-            lcd.print("SLOW MO ");
-         break; 
+           case 'S': 
+              lcd.setCursor(0, 1);
+              lcd.print("SLOW MO ");
+           break; 
          
-         case '1': 
-            lcd.setCursor(0, 0);
-            lcd.print("F-S-LEFT");
-         break;
+           case '1': 
+              lcd.setCursor(0, 0);
+              lcd.print("Forw. Slgt. LEFT");
+           break;
 
-         case '2': 
-            lcd.setCursor(0, 0);
-            lcd.print("FORWARD ");
-         break; 
+           case '2': 
+              lcd.setCursor(0, 0);
+              lcd.print("FORWARD         ");
+           break; 
          
-         case '3': 
-            lcd.setCursor(0, 0);
-            lcd.print("F-S-RGHT");
-         break;  
+           case '3': 
+              lcd.setCursor(0, 0);
+              lcd.print("Forw. Slgt. RGHT");
+           break;  
          
-         case '4': 
-            lcd.setCursor(0, 0);
-            lcd.print("LEFT    ");
-         break;   
+           case '4': 
+              lcd.setCursor(0, 0);
+              lcd.print("LEFT            ");
+           break;   
          
-         case '5': 
-            lcd.setCursor(0, 0);
-            lcd.print("STOP    ");
-         break;    
+           case '5': 
+              lcd.setCursor(0, 0);
+              lcd.print("STOP            ");
+           break;    
          
-         case '6': 
-            lcd.setCursor(0, 0);
-            lcd.print("RIGHT   ");
-         break;  
+           case '6': 
+              lcd.setCursor(0, 0);
+              lcd.print("RIGHT           ");
+           break;  
          
-         case '7': 
-            lcd.setCursor(0, 0);
-            lcd.print("B-S-LEFT");
-         break;
+           case '7': 
+              lcd.setCursor(0, 0);
+              lcd.print("Back  Slgt. LEFT");
+           break;
          
-         case '8': 
-            lcd.setCursor(0, 0);
-            lcd.print("BACKWARD");
-         break; 
+           case '8': 
+              lcd.setCursor(0, 0);
+              lcd.print("BACKWARD        ");
+           break; 
          
-         case '9': 
-            lcd.setCursor(0, 0);
-            lcd.print("B-S-RGHT");
-         break;                                                                      
-       } //end of switch on c
+           case '9': 
+              lcd.setCursor(0, 0);
+              lcd.print("Back Slgt. RIGHT");
+           break;                                                                      
+        } //end of switch on c
+      }  // end of if display_mode == MEEP  
     }  // end of if XBee.available
     
 }  // end of check_meep
@@ -490,7 +520,7 @@ void check_for_resends( void )
 
     stats.resends++;
 
-    print_resends();
+    // print_resends();
 
     Serial.print("Resend speed: ");
     Serial.println(ack_state.last_sent_speed);
@@ -503,6 +533,7 @@ void check_for_resends( void )
  */
 void print_resends( void )
 {
+  //***** NOTE! Currently not used...using print_acks instead... 
   lcd.setCursor(11, 1);
   lcd.print(stats.resends);
 }
@@ -530,9 +561,23 @@ void print_debounces( void )
   // here as a safety check in case that implementation ever changes.
   if (speed_debounces > 999) speed_debounces = 999;
 
+  #ifdef OLD_WAY
   lcd.setCursor(10, 0);
   lcd.print(joystick_debounces);
   lcd.setCursor(14, 0);
+  lcd.print(speed_debounces);
+  #endif
+
+  // Screen for debounces will look like this:
+  // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 
+  // J  O  Y  S  T  K  _  D  B  N  C  E     x  x  x 
+  // B  U  T  T  O  N  _  D  B  N  C  E     x  x  x
+
+  lcd.setCursor(0, 0);
+  lcd.print("JOYSTK DBNCE ");
+  lcd.print(joystick_debounces);
+  lcd.setCursor(0, 1);
+  lcd.print("BUTTON DBNCE ");
   lcd.print(speed_debounces);
   
 }
@@ -556,4 +601,80 @@ void check_for_keep_alive( void )
      XBee.print('K');
      last_sent_keep_alive = current_time;
    }
+}
+
+/*=====================================================================
+ * Function: update_display
+ */
+void update_display( void )
+{
+  
+  switch (display_mode)
+  {
+    case DISPLAY_MEEP:
+      // Dont need to do anything in here, as the meep displays are dealt with by the ack processing.
+    break;
+
+    case DISPLAY_DEBOUNCE:
+      print_debounces();
+    break;
+
+    case DISPLAY_ACKS:
+      print_acks();
+    break;
+    
+  }  
+}
+
+/*=====================================================================
+ * Function: toggle_display
+ */
+void toggle_display( void )
+{
+   lcd.clear();
+
+   Serial.print("Current display mode: ");
+   Serial.println(display_mode);
+   display_mode = display_mode + 1;
+   Serial.print("Display mode++: ");
+   Serial.println(display_mode);
+
+   Serial.print("NUM_DISPLAY_MODES: ");
+   Serial.println(NUM_DISPLAY_MODES);
+   
+   if (display_mode == NUM_DISPLAY_MODES) display_mode = 0;
+
+   Serial.print("Toggle to display mode ");
+   Serial.println(display_mode);
+   
+}
+
+
+/*=====================================================================
+ * Function: print_acks
+ */
+void print_acks( void )
+{
+  int avg_ack_time;
+  int max_ack_time;
+
+  avg_ack_time = (int) stats.average_ack_time;
+  if (avg_ack_time > 9999) avg_ack_time = 9999;
+  max_ack_time = stats.worst_case_ack_time;
+  if (max_ack_time > 9999) max_ack_time = 9999;
+ 
+  // Screen for acks will look like this:
+  // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 
+  // R  E  S  E  N  D  S  :  X  X  X  X  X  X  X  X
+  // A  V  G  :  x  x  x  x  M  A  X  :  x  x  x  x        
+  lcd.setCursor(0,0);
+  lcd.print("Resends: ");
+  lcd.print(stats.resends);
+  lcd.setCursor(0,1);
+  lcd.print("AVG:");
+  lcd.print(avg_ack_time);
+  lcd.setCursor(8,1);
+  lcd.print("MAX:");
+  lcd.print(max_ack_time);
+
 }
