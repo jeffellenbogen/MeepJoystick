@@ -61,7 +61,7 @@ int Speed = 2;
 int Direction;
 
 // Time, in ms, the joystick will wait until resending a command
-#define ACK_TIMEOUT 250   
+#define ACK_TIMEOUT 1000   
 
 // if we haven't sent something to the meep in a while, send 
 // a keep-alive command.  Note this time needs to be LESS than the
@@ -272,7 +272,8 @@ void check_and_send_speed( void )
   static unsigned long start_down_time=0;
   unsigned long current_time;
   
-  current_speed_button_state = debounceSpeed.read();
+ // current_speed_button_state = debounceSpeed.read();
+ current_speed_button_state = digitalRead(speedButton_pin);
   current_time = millis();
   
   if ((last_speed_button_state == 1) && (current_speed_button_state == 0))
